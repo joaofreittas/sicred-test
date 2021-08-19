@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.List;
 
 
 @Data
@@ -22,5 +23,8 @@ public class Associado {
 
 	private String documento;
 	private String conta;
+
+	@OneToMany(mappedBy = "associado", orphanRemoval = true)
+	private List<Operacao> operacoes;
 }
 
