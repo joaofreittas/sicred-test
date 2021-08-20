@@ -24,17 +24,21 @@ public class OperacaoController {
 		return ResponseEntity.ok(service.listAll());
 	}
 
-	@GetMapping("/{id}")
-	public ResponseEntity<OperacaoDTO> listById(@PathVariable("id") Long idOperacao){
-		Optional<OperacaoDTO> operacaoDTO = service.listById(idOperacao);
-		if(operacaoDTO.isPresent()) return ResponseEntity.ok(operacaoDTO.get());
-
-		return ResponseEntity.notFound().build();
+	@GetMapping("/search")
+	public ResponseEntity<List<OperacaoDTO>> listByFilters(@RequestParam(value = "searchCriteria", required = false) String searchCriteriaJson) throws Exception{
+		return ResponseEntity.ok(service.searchByFilters(searchCriteriaJson));
 	}
 
 	@PostMapping
-	public ResponseEntity<OperacaoDTO> save(@Valid @RequestBody OperacaoDTO payload) {
+	public ResponseEntity<OperacaoDTO> save(@RequestBody @Valid OperacaoDTO payload) {
 		return new ResponseEntity<>(service.save(payload), HttpStatus.CREATED);
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<OperacaoDTO> listById(@PathVariable("id") Long idOperacao){
+		return service.listById(idOperacao)
+				.map(ResponseEntity::ok)
+				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
 	@PutMapping("/{id}")
