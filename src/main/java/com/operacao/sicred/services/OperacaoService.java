@@ -3,6 +3,8 @@ package com.operacao.sicred.services;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.operacao.sicred.dto.OperacaoDTO;
+import com.operacao.sicred.enums.SituacaoOperacao;
+import com.operacao.sicred.exceptionhandler.SearchException;
 import com.operacao.sicred.models.Operacao;
 import com.operacao.sicred.repositories.OperacaoRepository;
 import com.operacao.sicred.specification.OperacaoSpecification;
@@ -12,6 +14,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,23 +36,37 @@ public class OperacaoService {
 	}
 
 	public List<OperacaoDTO> searchByFilters(String searchCriteriaJson) throws Exception{
-		List<SearchCriteria> searchCriterias = null;
-		List<OperacaoDTO> operacoes = null;
+		try{
+			List<SearchCriteria> searchCriterias = null;
+			List<OperacaoDTO> operacoes = null;
 
-		if(searchCriteriaJson.length() > 0){
-			searchCriterias = new ObjectMapper().readValue(searchCriteriaJson, new TypeReference<List<SearchCriteria>>() {});
-			operacoes = repository.findAll(OperacaoSpecification.builder().criterias(searchCriterias).build())
-					.stream()
-					.map(op -> OperacaoDTO.toDTO(mapper, op))
-					.collect(Collectors.toList());
+			if(searchCriteriaJson.length() > 0){
+				searchCriterias = buildSearchCriterias(searchCriteriaJson);
+				operacoes = repository.findAll(OperacaoSpecification.builder().criterias(searchCriterias).build())
+						.stream()
+						.map(op -> OperacaoDTO.toDTO(mapper, op))
+						.collect(Collectors.toList());
 
-		}else {
-			operacoes = repository.findAll().stream()
-					.map(op -> OperacaoDTO.toDTO(mapper, op))
-					.collect(Collectors.toList());
+			}else {
+				operacoes = repository.findAll().stream()
+						.map(op -> OperacaoDTO.toDTO(mapper, op))
+						.collect(Collectors.toList());
+			}
+
+			return operacoes;
+		}catch (Exception e){
+			throw new SearchException("Erro ao realizar pesquisa, verifique os valores enviados!");
 		}
+	}
 
-		return operacoes;
+	private List<SearchCriteria> buildSearchCriterias(String searchCriteriaJson) throws Exception{
+		List<SearchCriteria> searchCriterias = new ObjectMapper().readValue(searchCriteriaJson, new TypeReference<List<SearchCriteria>>() {});
+		searchCriterias.forEach(criteria -> {
+			if(criteria.getKey().equals("situacao")) criteria.setValue(SituacaoOperacao.valueOf((String)criteria.getValue()));
+			if(criteria.getKey().equals("vencimento")) criteria.setValue(LocalDate.parse((String)criteria.getValue(), DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+		});
+
+		return searchCriterias;
 	}
 
 	public Optional<OperacaoDTO> listById(Long idOperacao) {
@@ -57,12 +75,12 @@ public class OperacaoService {
 	}
 
 	public OperacaoDTO save(OperacaoDTO payload) {
-		Operacao operacao = repository.save(OperacaoDTO.toEntity(mapper, payload));
+		Operacao operacao = repository.save(OperacaoDTO.toModel(mapper, payload));
 		return OperacaoDTO.toDTO(mapper, operacao);
 	}
 
 	public OperacaoDTO edit(OperacaoDTO payload) {
-		Operacao operacao = repository.save(OperacaoDTO.toEntity(mapper, payload));
+		Operacao operacao = repository.save(OperacaoDTO.toModel(mapper, payload));
 		return OperacaoDTO.toDTO(mapper, operacao);
 	}
 

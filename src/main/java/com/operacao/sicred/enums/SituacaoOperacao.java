@@ -1,6 +1,6 @@
 package com.operacao.sicred.enums;
 
-public enum StatusOperacao {
+public enum SituacaoOperacao {
 	PAGO,
 	ABERTO,
 	VENCIDO,

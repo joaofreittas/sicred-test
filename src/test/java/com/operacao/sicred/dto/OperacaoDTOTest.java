@@ -17,7 +17,7 @@ public class OperacaoDTOTest {
 
 	@Test
 	public void testDTOToModel(){
-		assertEquals(OperacaoDataSet.getModel(), OperacaoDTO.toEntity(mapper, OperacaoDataSet.getDTO()));
+		assertEquals(OperacaoDataSet.getModel(), OperacaoDTO.toModel(mapper, OperacaoDataSet.getDTO()));
 	}
 
 }

@@ -7,10 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,26 +24,60 @@ public class OperacaoSpecification implements Specification<Operacao> {
 		List<Predicate> predicates = new ArrayList<>();
 
 		criterias.forEach(criteria -> {
-			if (criteria.getOperation().equalsIgnoreCase(">")) {
-				predicates.add(builder.greaterThanOrEqualTo(
-						root.<String> get(criteria.getKey()), criteria.getValue().toString()));
-			}
-			else if (criteria.getOperation().equalsIgnoreCase("<")) {
-				predicates.add(builder.lessThanOrEqualTo(
-						root.<String> get(criteria.getKey()), criteria.getValue().toString()));
-			}
-			else if (criteria.getOperation().equalsIgnoreCase(":")) {
-				if (root.get(criteria.getKey()).getJavaType() == String.class) {
-					predicates.add(builder.like(
-							root.<String>get(criteria.getKey()), "%" + criteria.getValue() + "%"));
-				} else {
-					predicates.add(builder.equal(root.get(criteria.getKey()), criteria.getValue()));
-				}
+			String[] keys = criteria.getKey().split("[.]");
+			switch (criteria.getOperation()){
+				case MATCH:
+					if (keys.length == 0) {
+						predicates.add(
+								builder.like(
+										root.get(criteria.getKey()),
+										"%".concat(criteria.getValue().toString()).concat("%")));
+						break;
+					}
+					predicates.add(
+							builder.like(
+									joinFactoryForLike(root, keys),
+									"%".concat(criteria.getValue().toString()).concat("%")));
+					break;
+				case EQUAL:
+					if (keys.length == 0) {
+						predicates.add(builder.equal(root.get(criteria.getKey()), criteria.getValue()));
+						break;
+					}
+					predicates.add(builder.equal(joinFactoryForEqual(root, keys), criteria.getValue()));
+					break;
 			}
 		});
 
 		return builder.and(predicates.toArray(new Predicate[0]));
 	}
+
+	private Expression<Operacao> joinFactoryForEqual(Root<Operacao> root, String[] keys) {
+		Expression<Operacao> expression = null;
+		expression = expressionFactory(root, keys, expression);
+		return expression;
+	}
+
+
+	private Expression<String> joinFactoryForLike(Root<Operacao> root, String[] keys) {
+		Expression<String> expression = null;
+		expression = expressionFactory(root, keys, expression);
+		return expression;
+	}
+
+	private Expression expressionFactory(Root<Operacao> root, String[] keys, Expression expression) {
+		Join<Object, Object> join = null;
+		JoinType joinType = JoinType.INNER;
+		for (int i = 0; i < keys.length; i++) {
+			if (i + 1 == keys.length) {
+				expression = join == null ? root.get(keys[i]) : join.get(keys[i]);
+				break;
+			}
+			join = join == null ? root.join(keys[i], joinType) : join.join(keys[i], joinType);
+		}
+		return expression;
+	}
+
 
 
 }

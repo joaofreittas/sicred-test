@@ -1,6 +1,6 @@
 package com.operacao.sicred.models;
 
-import com.operacao.sicred.enums.StatusOperacao;
+import com.operacao.sicred.enums.SituacaoOperacao;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +27,7 @@ public class Operacao {
 	private Associado associado;
 
 	@Enumerated(EnumType.STRING)
-	private StatusOperacao status;
+	private SituacaoOperacao situacao;
 
 	private BigDecimal taxaJuros;
 	private BigDecimal valor;

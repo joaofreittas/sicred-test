@@ -1,6 +1,5 @@
 package com.operacao.sicred.dto;
 
-import com.operacao.sicred.enums.StatusOperacao;
 import com.operacao.sicred.models.Operacao;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,8 +38,8 @@ public class OperacaoDTO {
 	private LocalDate vencimento;
 
 	@NotNull
-	@Pattern(regexp = "ABERTO|VENCIDO|PAGO", message = "Status inválido.")
-	private String status;
+	@Pattern(regexp = "ABERTO|VENCIDO|PAGO", message = "Situação inválida.")
+	private String situacao;
 
 	@NotNull
 	@NotBlank
@@ -50,7 +49,7 @@ public class OperacaoDTO {
 		return mapper.map(operacao, OperacaoDTO.class);
 	}
 
-	public static Operacao toEntity(ModelMapper mapper, OperacaoDTO operacaoDTO) {
+	public static Operacao toModel(ModelMapper mapper, OperacaoDTO operacaoDTO) {
 		return mapper.map(operacaoDTO, Operacao.class);
 	}
 }

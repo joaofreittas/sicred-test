@@ -1,6 +1,8 @@
 package com.operacao.sicred.controllers;
 
 import com.operacao.sicred.dto.OperacaoDTO;
+import com.operacao.sicred.exceptionhandler.ResponseError;
+import com.operacao.sicred.exceptionhandler.SearchException;
 import com.operacao.sicred.services.OperacaoService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +58,15 @@ public class OperacaoController {
 
 		service.deleteById(idOperacao);
 		return ResponseEntity.noContent().build();
+	}
+
+	@ExceptionHandler({ SearchException.class })
+	public ResponseEntity<ResponseError> handleException(Exception e) {
+		return new ResponseEntity<>(
+				ResponseError.builder()
+						.status(400)
+						.errorMessage(e.getMessage())
+						.build(), HttpStatus.BAD_REQUEST);
 	}
 
 }

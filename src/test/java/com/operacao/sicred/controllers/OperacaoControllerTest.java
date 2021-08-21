@@ -1,8 +1,15 @@
 package com.operacao.sicred.controllers;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import com.operacao.sicred.dataset.OperacaoDataSet;
 import com.operacao.sicred.dto.OperacaoDTO;
 import com.operacao.sicred.services.OperacaoService;
@@ -17,9 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.doNothing;
@@ -27,7 +32,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @RunWith(MockitoJUnitRunner.class)
 @WebMvcTest(OperacaoController.class)
@@ -42,10 +46,23 @@ public class OperacaoControllerTest {
 	public void setup() {
 		controller = new OperacaoController(service);
 		mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+
+		Configuration.setDefaults(new Configuration.Defaults() {
+			private final JsonProvider jsonProvider = new JacksonJsonProvider(objectMapper);
+			private final MappingProvider mappingProvider = new JacksonMappingProvider(objectMapper);
+			@Override public JsonProvider jsonProvider() { return jsonProvider; }
+			@Override public MappingProvider mappingProvider() { return mappingProvider; }
+			@Override public Set<Option> options() { return EnumSet.noneOf(Option.class); }
+		});
+
+
 	}
 
 	@Test
-	public void testListAll() throws Exception {
+	public void whenListAll_thenReturnListOperations() throws Exception {
 		List<OperacaoDTO> operacoes = Arrays.asList(OperacaoDataSet.getDTO());
 		when(service.listAll()).thenReturn(operacoes);
 		mockMvc
@@ -61,12 +78,12 @@ public class OperacaoControllerTest {
 				.andExpect(jsonPath("$[0].associado.documento", is(operacoes.get(0).getAssociado().getDocumento())))
 				.andExpect(jsonPath("$[0].associado.conta", is(operacoes.get(0).getAssociado().getConta())))
 				.andExpect(jsonPath("$[0].taxaJuros", is(operacoes.get(0).getTaxaJuros())))
-				.andExpect(jsonPath("$[0].status", is(operacoes.get(0).getStatus())));
+				.andExpect(jsonPath("$[0].situacao", is(operacoes.get(0).getSituacao())));
 
 	}
 
 	@Test
-	public void testGetById() throws Exception {
+	public void whenLIstById_thenReturnOperation() throws Exception {
 		Optional<OperacaoDTO> dtoResponse = Optional.of(OperacaoDataSet.getDTO());
 		when(service.listById(1L)).thenReturn(dtoResponse);
 		mockMvc
@@ -82,12 +99,12 @@ public class OperacaoControllerTest {
 				.andExpect(jsonPath("$.associado.documento", is(dtoResponse.get().getAssociado().getDocumento())))
 				.andExpect(jsonPath("$.associado.conta", is(dtoResponse.get().getAssociado().getConta())))
 				.andExpect(jsonPath("$.taxaJuros", is(dtoResponse.get().getTaxaJuros())))
-				.andExpect(jsonPath("$.status", is(dtoResponse.get().getStatus())));
+				.andExpect(jsonPath("$.situacao", is(dtoResponse.get().getSituacao())));
 
 	}
 
 	@Test
-	public void testPost() throws Exception {
+	public void whenSave_thenReturnStatusCreated() throws Exception {
 		OperacaoDTO dto = OperacaoDataSet.getDTO();
 		when(service.save(dto)).thenReturn(dto);
 		mockMvc
@@ -99,7 +116,7 @@ public class OperacaoControllerTest {
 	}
 
 	@Test
-	public void testPut() throws Exception {
+	public void whenEdit_thenReturnOperationEdited() throws Exception {
 		OperacaoDTO operacaoDTO = OperacaoDataSet.getDTO();
 		operacaoDTO.setProduto("Outro produto!");
 
@@ -111,12 +128,12 @@ public class OperacaoControllerTest {
 								.contentType(MediaType.APPLICATION_JSON)
 								.content(asJsonString(operacaoDTO)))
 				.andDo(MockMvcResultHandlers.print())
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.produto", is("Outro produto!")));
+				.andExpect(jsonPath("$.produto", is("Outro produto!")))
+				.andExpect(status().isOk());
 	}
 
 	@Test
-	public void testDelete() throws Exception {
+	public void whenDelete_thenReturnStatusNoContent() throws Exception {
 		OperacaoDTO operacaoDTO = OperacaoDataSet.getDTO();
 		when(service.existsById(operacaoDTO.getId())).thenReturn(true);
 		doNothing().when(service).deleteById(operacaoDTO.getId());
@@ -125,7 +142,23 @@ public class OperacaoControllerTest {
 				.andExpect(status().isNoContent());
 	}
 
+	@Test
+	public void whenDelete_thenReturnStatusNotFound() throws Exception {
+		mockMvc
+				.perform(delete("/operacao/55"))
+				.andExpect(status().isNotFound());
+	}
 
+	@Test
+	public void whenEdit_thenReturnStatusNotFound() throws Exception {
+		OperacaoDTO operacaoDTO = OperacaoDataSet.getDTO();
+		mockMvc
+				.perform(
+						put("/operacao/55")
+								.contentType(MediaType.APPLICATION_JSON)
+								.content(asJsonString(operacaoDTO)))
+				.andExpect(status().isNotFound());
+	}
 
 	public static String asJsonString(Object obj) {
 		try {
