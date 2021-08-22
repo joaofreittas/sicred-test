@@ -19,7 +19,11 @@ GET: /operacao/{id}
 ``` 
 GET: /operacao/search?searchCriteria={ urlEncoded }
 
-searchCriteriaJsonExample: [{"key":"valor","operation":":","value":"1500.0"}]
+- buscar operações que tenham valor igual a 1500.0
+searchCriteriaJsonExample: [{"key":"valor","operation":"EQUAL","value":"1500.0"}]
+
+- buscar operações que nome do produto esteja contido em 'Financiamento'
+searchCriteriaJsonExample: [{"key":"produto","operation":"MATCH","value":"Financiamento"}]
 
 urlEncoded: %5B%7B%22key%22%3A%22valor%22%2C%22operation%22%3A%22%3A%22%2C%22value%22%3A%221500.0%22%7D%5D
 ```
