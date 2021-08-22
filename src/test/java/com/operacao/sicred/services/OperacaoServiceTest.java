@@ -2,14 +2,11 @@ package com.operacao.sicred.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.operacao.sicred.dataset.OperacaoDataSet;
 import com.operacao.sicred.dto.OperacaoDTO;
 import com.operacao.sicred.enums.SearchType;
-import com.operacao.sicred.models.Associado;
 import com.operacao.sicred.models.Operacao;
-import com.operacao.sicred.repositories.AssociadoRepository;
 import com.operacao.sicred.repositories.OperacaoRepository;
 import com.operacao.sicred.specification.SearchCriteria;
 import org.junit.After;
@@ -20,8 +17,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.ui.ModelMap;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -42,9 +39,12 @@ public class OperacaoServiceTest {
 
 	private Operacao operacao;
 
+	private ObjectMapper objectMapper;
+
 	@Before
 	public void setUp() {
 		this.operacao = operacaoRepository.save(OperacaoDataSet.getModel());
+		this.objectMapper = new ObjectMapper();
 	}
 
 	@After
@@ -106,7 +106,7 @@ public class OperacaoServiceTest {
 						.value("Financiamento")
 						.build()
 		);
-		String searchCriteriaJson = new ObjectMapper().writeValueAsString(searchCriterias);
+		String searchCriteriaJson = objectMapper.writeValueAsString(searchCriterias);
 		List<OperacaoDTO> operacoes = service.searchByFilters(searchCriteriaJson);
 
 		assertEquals(operacoes.get(0), dto);
@@ -122,7 +122,7 @@ public class OperacaoServiceTest {
 						.value("alguma coisa")
 						.build()
 		);
-		String searchCriteriaJson = new ObjectMapper().writeValueAsString(searchCriterias);
+		String searchCriteriaJson = objectMapper.writeValueAsString(searchCriterias);
 		List<OperacaoDTO> operacoes = service.searchByFilters(searchCriteriaJson);
 
 		assertEquals(operacoes.size(), 0);
@@ -138,13 +138,48 @@ public class OperacaoServiceTest {
 						.value(LocalDate.of(2022, 8, 21))
 						.build()
 		);
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new JavaTimeModule());
-		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		String searchCriteriaJson = mapper.writeValueAsString(searchCriterias);
+
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+		String searchCriteriaJson = objectMapper.writeValueAsString(searchCriterias);
 		List<OperacaoDTO> operacoes = service.searchByFilters(searchCriteriaJson);
 
-		assertEquals(operacoes.size(), 1);
+		assertEquals(operacoes.get(0), dto);
+	}
+
+	@Test
+	public void whenSearchByFiltersValue_returnListOperations() throws Exception {
+		OperacaoDTO dto = OperacaoDTO.toDTO(mapper, this.operacao);
+		List<SearchCriteria> searchCriterias = Arrays.asList(
+				SearchCriteria.builder()
+						.key("valor")
+						.operation(SearchType.EQUAL)
+						.value(new BigDecimal("100.10"))
+						.build()
+		);
+
+		String searchCriteriaJson = objectMapper.writeValueAsString(searchCriterias);
+		List<OperacaoDTO> operacoes = service.searchByFilters(searchCriteriaJson);
+
+		assertEquals(operacoes.get(0), dto);
+	}
+
+	@Test
+	public void whenSearchByFiltersSituation_returnListOperations() throws Exception {
+		OperacaoDTO dto = OperacaoDTO.toDTO(mapper, this.operacao);
+		List<SearchCriteria> searchCriterias = Arrays.asList(
+				SearchCriteria.builder()
+						.key("situacao")
+						.operation(SearchType.EQUAL)
+						.value("ABERTO")
+						.build()
+		);
+
+		String searchCriteriaJson = objectMapper.writeValueAsString(searchCriterias);
+		List<OperacaoDTO> operacoes = service.searchByFilters(searchCriteriaJson);
+
+		assertEquals(operacoes.get(0), dto);
 	}
 
 }

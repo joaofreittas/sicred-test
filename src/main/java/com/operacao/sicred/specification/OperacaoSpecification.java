@@ -58,7 +58,6 @@ public class OperacaoSpecification implements Specification<Operacao> {
 		return expression;
 	}
 
-
 	private Expression<String> joinFactoryForLike(Root<Operacao> root, String[] keys) {
 		Expression<String> expression = null;
 		expression = expressionFactory(root, keys, expression);
@@ -77,7 +76,5 @@ public class OperacaoSpecification implements Specification<Operacao> {
 		}
 		return expression;
 	}
-
-
 
 }
